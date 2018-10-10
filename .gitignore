@@ -1,0 +1,6 @@
+__pycache__/
+_site/
+.RData
+.RHistory
+.idea/
+.ipynb_checkpoints/
