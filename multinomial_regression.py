@@ -63,6 +63,7 @@ def main(predict=0):
 
         gmask = lut.get_mask(arr=data, conds={ix('grp'): grp})
         gdata = data[gmask, :]
+        gsids = lut.get_unique(gdata, ix('sid'))
 
         pc = gdata[:, ix('pc1'):ix('pc4') + 1]
         ch = gdata[:, ix('sc1'):ix('sc4') + 1]
@@ -71,10 +72,15 @@ def main(predict=0):
 
         for j, tsk in enumerate([1, 2, 3, 4]):
             tmask = lut.get_mask(gdata, {ix('t0'): tsk})
-            rt[tmask, j] = 1
+            rt[:-1][tmask[1:], j] = 1
 
-        rt[0, :] = 15
-        rt = np.cumsum(rt, axis=0)
+        for sid in gsids:
+            smask = lut.get_mask(gdata, {ix('sid'): sid})
+            srt = rt[smask, :]
+            srt[0, :] = 15
+            srt = np.cumsum(srt, axis=0)
+            rt[smask] = srt
+
         rt = np.transpose(rt.T / np.sum(rt, axis=1))
 
         ind = onehot(gdata[:, ix('t0')].astype(int)).astype(bool)
@@ -82,8 +88,8 @@ def main(predict=0):
         x2 = ch[ind].reshape([-1, 1])*100
         x3 = rt[ind].reshape([-1, 1])*100
 
-        X = sm.add_constant(np.concatenate([x1, x3], 1), prepend=False)
-        X = pd.DataFrame(data=X, columns='pc,rt,const'.split(','))
+        X = sm.add_constant(np.concatenate([x1], 1), prepend=False)
+        X = pd.DataFrame(data=X, columns='pc,const'.split(','))
 
         Y = pd.DataFrame(data=gdata[:, ix('t1')].astype(int), columns=['Choice'])
 
@@ -112,7 +118,7 @@ def main(predict=0):
                 logits = np.dot(beta_, X.T)
                 Y_hat = np.argmax(softmax(logits, stable=1), axis=0)
 
-            if ti == 3:
+            if ti == 0:
                 print(model.summary())
 
         overall = np.stack(softmax_weights, axis=1).T
@@ -145,19 +151,19 @@ def main(predict=0):
         ax2.set_xlabel('Odds: Pr(task)/P(reference)')
         add_text(ax2, np.around(odds, 3))
 
-        ax3 = fig.add_subplot(2, 3, 2 + grp * 3)
-        odds = np.exp(onevrest_rt)
-        images.append(ax3.matshow(odds, aspect='equal', cmap='viridis'))
-        ax3.set_title('Group {}: OvR RT'.format('FS'[grp]), pad=20)
-        ax3.xaxis.set_ticks_position('top')
-        ax3.yaxis.set_ticks_position('left')
-        ax3.set_xticks([0, 1, 2, 3])
-        ax3.set_yticks([0, 1, 2, 3])
-        ax3.set_xticklabels('1D,I1D,2D,R'.split(','))
-        ax3.set_yticklabels('1D,I1D,2D,R'.split(','))
-        ax3.set_ylabel('Reference')
-        ax3.set_xlabel('Odds: Pr(task)/Pr(reference)')
-        add_text(ax3, np.around(odds, 3))
+        # ax3 = fig.add_subplot(2, 3, 2 + grp * 3)
+        # odds = np.exp(onevrest_rt)
+        # images.append(ax3.matshow(odds, aspect='equal', cmap='viridis'))
+        # ax3.set_title('Group {}: OvR RT'.format('FS'[grp]), pad=20)
+        # ax3.xaxis.set_ticks_position('top')
+        # ax3.yaxis.set_ticks_position('left')
+        # ax3.set_xticks([0, 1, 2, 3])
+        # ax3.set_yticks([0, 1, 2, 3])
+        # ax3.set_xticklabels('1D,I1D,2D,R'.split(','))
+        # ax3.set_yticklabels('1D,I1D,2D,R'.split(','))
+        # ax3.set_ylabel('Reference')
+        # ax3.set_xlabel('Odds: Pr(task)/Pr(reference)')
+        # add_text(ax3, np.around(odds, 3))
 
         logits = np.dot(beta_, X.T)
         Y_hat = np.argmax(softmax(logits, stable=1), axis=0) + 1
@@ -203,8 +209,9 @@ def main(predict=0):
                 im.set_cmap(changed_image.get_cmap())
                 im.set_clim(changed_image.get_clim())
 
-    fig.tight_layout()
-    fig.subplots_adjust(hspace=.3)
+    # fig.tight_layout()
+    # fig.subplots_adjust(hspace=.3)
+    # plt.show()
     # save_it(fig, '/Users/alexten/Projects/HFSP/img', 'MNLogit_pc_rt', save_as='svg', dpi=500, compress=True)
 
 
