@@ -33,6 +33,9 @@ z <- vector()
 for (j in 1:nbp) {
   combs <- combn(nbp, j)
   for (k in 1:ncol(combs)) {
+    if (i <= 524000) {
+      next
+    }
     varinds <- combs[, k]
     
     if (any(varinds >= 17)) {
@@ -87,9 +90,12 @@ for (j in 1:nbp) {
     }
     if (i %% 1000 == 0) {
       print(sprintf('i = %d, elapsed time: %.3f s', i, sum(as.numeric(out$xtime))), quote = FALSE)
-      write.csv(x=out, file='massive.csv')
+      write.csv(x=out, file='remaining.csv')
       }
       
     i <- i + 1
   }
 }
+
+write.csv(x=out, file='remaining.csv')
+
