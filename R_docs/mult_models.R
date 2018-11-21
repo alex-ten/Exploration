@@ -1,5 +1,7 @@
 library(mlogit, quietly=TRUE)
 library(nnet, quietly=TRUE)
+library(devtools, quietly=TRUE)
+document(file.path(getwd(),'loc.R.utils'))
 
 pivot <- 1 # select reference category
 
@@ -24,18 +26,16 @@ for (varname in split2char('currentd,tord,pct,pcr,pc,pval,relt,sc,scsq,lrn,int,c
 
 # Convert to long format
 longd <- mlogit.data(d, shape="wide", varying=altspec, choice='nxt', sep=':')
-ivs <- split2char('currentd,tord,pct,pcr,pc,pval,relt,sc,scsq,lrn,int,comp,time,prog,rule,lrn2,grp,trial,blkt')
+all_ivs <- split2char('currentd,tord,pct,pcr,pc,pval,relt,sc,scsq,lrn,int,comp,time,prog,rule,lrn2,grp,trial,blkt')
+ivs <- split2char('currentd,pval,relt,pc,int,time')
 BICN <- log(nrow(longd) / 4)
 # Start loop
 i <- 1
-nbp <- length(ivs)
+nbp <- 6
 z <- vector()
 for (j in 1:nbp) {
   combs <- combn(nbp, j)
   for (k in 1:ncol(combs)) {
-    if (i <= 524000) {
-      next
-    }
     varinds <- combs[, k]
     
     if (any(varinds >= 17)) {
@@ -48,7 +48,7 @@ for (j in 1:nbp) {
     
     f <- mFormula(as.formula(
         paste( c('nxt ~ ', altspec, ' | ', indspec), collapse='') ))
-    
+    print(f)
     t0 <- Sys.time()
     good <- tryCatch(model <- mlogit(f, data = longd, maxit=1000, reflevel=pivot),
                      error=function(e) {return(FALSE)})
@@ -70,8 +70,8 @@ for (j in 1:nbp) {
       results <- summary(model)
       # Evaluate prediction accuracy
       nd <- cbind(longd[attr(terms(f), 'term.labels')], factor(longd$nxt))
-      probs <- predict.mlogit_(model, nd)
-      y_hat <- factor(apply(probs, 1, which.max))
+      
+      y_hat <- factor(apply(model$probabilities, 1, which.max))
       
       cm <- confusionMatrix(data=y_hat, reference=factor(d$nxt))
       t1 <- Sys.time()
@@ -88,14 +88,12 @@ for (j in 1:nbp) {
         round(as.numeric(t1-t0), digits=3)
       )
     }
-    if (i %% 1000 == 0) {
-      print(sprintf('i = %d, elapsed time: %.3f s', i, sum(as.numeric(out$xtime))), quote = FALSE)
-      write.csv(x=out, file='remaining.csv')
-      }
-      
+    # if (i %% 1000 == 0) {
+    #   print(sprintf('i = %d, elapsed time: %.3f s', i, sum(as.numeric(out$xtime))), quote = FALSE)
+    #   write.csv(x=out, file='remaining.csv')
+    #   }
     i <- i + 1
   }
 }
 
-write.csv(x=out, file='remaining.csv')
-
+write.csv(x=out, file='smaller_ds.csv')
