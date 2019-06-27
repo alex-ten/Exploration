@@ -27,6 +27,14 @@ get_alts <- function(data, varname, altmask) {
   return(to_append)
 }
 
+rownorm <- function(row) {
+  if (min(row) == max(row)) {
+    row / 10
+  } else {
+    (row-min(row))/(max(row)-min(row))
+  }
+}
+
 STRINGFACT <- FALSE
 NORMAL_SELF_REPORTS <- FALSE
 
@@ -68,13 +76,6 @@ rm(xdata)
 
 # May be normalize self reports
 if (NORMAL_SELF_REPORTS) {
-  rownorm <- function(row) {
-    if (min(row) == max(row)) {
-      row / 10
-    } else {
-      (row-min(row))/(max(row)-min(row))
-    }
-  }
   for (varg in split2char('lrn:,int:,comp:,time:,prog:,rule:,lrn2:')) {
     normcols <- apply(fulldata[, grepl(varg, names(fulldata))], 1, rownorm)
     fulldata[, grepl(varg, names(fulldata))] <- t(normcols)
@@ -85,3 +86,16 @@ if (NORMAL_SELF_REPORTS) {
 # Rearrange structure
 fulldata <- fulldata[c(1,2,4:7,8:35,39:74)]
 
+# pvals
+# =================
+pvalend <- fulldata[fulldata$trial==200, split2char('pval:1,pval:2,pval:3,pval:4')]
+Ss <- fulldata[fulldata$trial==250, 'sid']
+mask <- fulldata$trial==61 & fulldata$sid!=setdiff(fulldata$sid, Ss)
+
+pvalbeg <- fulldata[mask, split2char('pval:1,pval:2,pval:3,pval:4')]
+
+pvaldiff <- pvalbeg - pvalend
+pvaldiff[pvaldiff < 0] <- 0
+
+cor(1 - pvalend[,'pval:2'], fulldata[mask,'prog:2'])
+colMeans(fulldata[mask,split2char('prog:1,prog:2,prog:3,prog:4')])

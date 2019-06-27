@@ -23,99 +23,73 @@ get_alts <- function(data, varname, altmask) {
   return(to_append)
 }
 
-document(file.path(getwd(),'loc.R.utils'))
-
 # Set up some flags
-CONVERT2LONG <- TRUE
-STRINGFACT <- FALSE
-NORMAL_SELF_REPORTS <- FALSE
+NORMAL_SELF_REPORTS <- TRUE
 
 # Load data
-mdata <- read.csv('cmnr_mdata.csv', check.names = FALSE)
-mdata <- mdata[, -length(colnames(mdata))]
-mdata <- mdata[, -1]
-xdata <- read.csv('cmnr_xdata.csv', check.names = FALSE)
+mdata <- read.csv('cmnr_data30cols.csv', check.names = FALSE)
 
-lmdata <- mdata
+reltdata <- read.csv('cmnr_mdata.csv', check.names = FALSE)[split2char('relt:1,relt:2,relt:3,relt:4')]
+mdata <- cbind(mdata, reltdata)
+mdata <- mdata[, c(2:28, 36:39, 29:35)]
 
-# Discard incomplete cases
-lmdata <- lmdata[complete.cases(lmdata), ]
+# xdata <- read.csv('cmnr_xdata.csv', check.names = FALSE)
+d <- mdata[, -36]
+rm(mdata)
 
 # Convert categorical data to factors
 factor_col_names <- c('current', 'nxt')
-lmdata[, factor_col_names] <- lapply(lmdata[, factor_col_names], factor)
+d[, factor_col_names] <- lapply(d[, factor_col_names], factor)
 
 # May be convert number-coded factors to explicit names
 if (STRINGFACT) {
-  lmdata[, factor_col_names] <- lapply(lmdata[, factor_col_names], function(x) {
+  d[, factor_col_names] <- lapply(d[, factor_col_names], function(x) {
     mapvalues(x, from = as.character(1:4), to = split2char('1D,I1D,2D,R'))}
   )
 }
 
 # Square SC values
 ssc_col_names <- split2char('scsq:1,scsq:2,scsq:3,scsq:4')
-lmdata[ssc_col_names] <- lapply(lmdata[, split2char('sc:1,sc:2,sc:3,sc:4')], function(x) {x^2})
+d[ssc_col_names] <- lapply(d[, split2char('sc:1,sc:2,sc:3,sc:4')], function(x) {x^2})
 
 # Create 'current' dummies
-dummies <- dummy_cols(lmdata$current)[c('.data_1', '.data_2', '.data_3', '.data_4')]
+dummies <- dummy_cols(d$current)[c('.data_1', '.data_2', '.data_3', '.data_4')]
 colnames(dummies) <- split2char('currentd:1,currentd:2,currentd:3,currentd:4')
-lmdata <- cbind(lmdata, dummies)
+d <- cbind(d, dummies)
 rm(dummies)
 
-# Match unique xdata rows with corresponding rows in mdata and join datasets
-inds <- match(lmdata$sid, xdata$sid) # get row indices of xdata for each mdata sid
-lmdata <- cbind(lmdata, xdata[inds, c(-1,-2,-3)]) # concatenate datasets
-rm(xdata)
-
-# May be normalize self reports
-if (NORMAL_SELF_REPORTS) {
-  rownorm <- function(row) {
-    if (min(row) == max(row)) {
-      row / 10
-    } else {
-      (row-min(row))/(max(row)-min(row))
-    }
-  }
-  for (varg in split2char('lrn:,int:,comp:,time:,prog:,rule:,lrn2:')) {
-    normcols <- apply(lmdata[, grepl(varg, names(lmdata))], 1, rownorm)
-    lmdata[, grepl(varg, names(lmdata))] <- t(normcols)
-    rm(normcols)
-  }
-}
-
-# Rearrange structure
-lmdata <- lmdata[c(1,2,4,5,6,7,8:23,26:61,25)]
+d <- d[c(1,2,4:35,38:45,36:37)]
 
 # Sample from stay trials
 set.seed(2)
-switch_data <- lmdata[lmdata$sw_act == 1, ]
+switch_data <- d[d$sw_act == 1, ]
 switch_data <- switch_data[!(switch_data$current == switch_data$nxt), ]
-stay_data <- lmdata[lmdata$sw_act == 0, ]
+stay_data <- d[d$sw_act == 0, ]
 stay_sample <- stay_data[sample(nrow(stay_data), nrow(switch_data), replace = FALSE), ]
 
-lmdata <- rbind(stay_sample, switch_data)
+d <- rbind(stay_sample, switch_data)
 
 # Scramble switch and stay data
-lmdata <- lmdata[sample(nrow(lmdata)),]
-rm(mdata, stay_data, switch_data, stay_sample)
+d <- d[sample(nrow(d)), ]
+rm(stay_data, switch_data, stay_sample)
 
 # Factorize switch column
-lmdata$sw_act <- factor(lmdata$sw_act)
+d$sw_act <- factor(d$sw_act)
 
-selector <- cbind(1:nrow(lmdata), lmdata$current)
-d <- lmdata[,c(1:6,59)]
-for (varname in split2char('pc,pval,sc,relt,scsq,lrn,int,comp,time,prog,rule,lrn2')) {
-  d <- cbind(d, lmdata[vargrp(varname)][selector])
-  names(d)[length(names(d))] <- varname
+selector <- cbind(1:nrow(d), d$current)
+cleand <- d[ ,c(1:6,42:43)]
+for (varname in split2char('pct,pc,pcr,pval,relt')) {
+  cleand <- cbind(cleand, d[vargrp(varname)][selector])
+  names(cleand)[length(names(cleand))] <- varname
 }
-d$current <- factor(d$current)
-# d <- cbind(d, lmdata[vargrp('currentd')])
+cleand$current <- factor(cleand$current)
+# d <- cbind(d, d[vargrp('currentd')])
 # names(d)[c(20,21,22,23)] <- split2char('cur_1,cur_2,cur_3,cur_4')
 # d[, c(20,21,22,23)] <- factor(d[, c(20,21,22,23)])
 
 # Fit linear model
-model <- glm('sw_act ~ grp + trial + blkt + pc + pval + relt + lrn', 
-             data = d, maxit=1000, family='binomial')
+model <- glm('sw_act ~ grp + trial + blkt + pc + pcr + pval + relt', 
+             data = cleand, maxit=1000, family='binomial')
 results <- summary(model)
 
 # Report results
@@ -123,11 +97,13 @@ results
 exp(coef(results))
 
 # Evaluate prediction accuracy
-probs <- predict(model, d[split2char('grp,trial,blkt,pc,pval,relt,lrn')])
+probs <- predict(model, cleand[split2char('grp,trial,blkt,pc,pcr,pval,relt')], type='response')
 
-results
-exp(coef(results))
-confint(model)
+# results
+# exp(coef(results))
+# confint(model)
 
 y_hat <- as.integer(probs > .5)
 confusionMatrix(data=factor(y_hat), reference=factor(d$sw_act))
+
+summary(probs)

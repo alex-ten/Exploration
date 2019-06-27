@@ -60,4 +60,22 @@ y_hat_trans <- factor(apply(trans$probabilities, 1, which.max))
 cm_best  <- confusionMatrix(data=y_hat_best, reference=factor(d$nxt))
 cm_trans <- confusionMatrix(data=y_hat_trans, reference=factor(d$nxt))
 
-cm_trans
+
+
+lmdata <- mdata[, -1]
+
+cur <- lmdata$current
+nxt <- lmdata$nxt
+
+Fall <- cur[lmdata$grp==0]
+Sall <- cur[lmdata$grp==1]
+
+table(Fall) / sum(table(Fall))
+table(Sall) / sum(table(Sall))
+
+Fswitch <- nxt[lmdata$grp==0 & lmdata$sw_act==1]
+Sswitch <- nxt[lmdata$grp==1 & lmdata$sw_act==1]
+
+table(Fswitch) / sum(table(Fswitch))
+table(Sswitch) / sum(table(Sswitch))
+

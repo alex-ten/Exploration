@@ -36,23 +36,23 @@ def add_labels(ax, title=None, x=None, y=None):
         ax.set_ylabel(y)
 
 
-def despine(ax, which):
+def despine(ax, which=['top','right']):
     if isinstance(which, str):
         which = [which]
     for spine in which:
         ax.spines[spine].set_visible(False)
 
 
-def line_histogram(ax, data, bins, label, precision=None, lw=1, c=None):
+def line_histogram(ax, data, bins, label, precision=None, lw=1, c=None, alpha=1, ls='-'):
     if precision:
         data = np.around(data, precision)
         bins = np.around(bins, precision)
     y, bin_edges = np.histogram(data, bins=bins, density=False, weights=np.zeros_like(data) + 1. / data.size)
     bin_centers = (bin_edges[1:] + bin_edges[:-1])/2
     if c:
-        ax.plot(bin_centers, y, '-', label=label, lw=lw, c=c)
+        ax.plot(bin_centers, y, '-', label=label, lw=lw, c=c, alpha=alpha, ls=ls)
     else:
-        ax.plot(bin_centers, y, '-', label=label, lw=lw)
+        ax.plot(bin_centers, y, '-', label=label, lw=lw, alpha=alpha, ls=ls)
     ax.set_xticks(bins[:-1])
     ax.grid(axis='y', c='gray', ls='dotted')
     ax.grid(axis='x', c='gray', ls='dotted')
@@ -195,3 +195,26 @@ def very_pretty_scatter(x, y, ax, groups, gcolors, glabels,
     if xlim: ax.set_xlim(xlim)
     if ylim: ax.set_ylim(ylim)
     ax.grid(True)
+    
+    
+def pad_lims(a, scale=.05):
+    mn, mx = np.min(a), np.max(a)
+    rng = np.abs(mx - mn)
+    return (mn-rng*scale, mx+rng*scale)
+
+
+def pretty(ax, gridlines='both'):
+    despine(ax)
+    ax.grid(True, c='gray', zorder=2, ls=':', axis=gridlines)
+    return ax
+
+def ghostify(ax):
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    return ax
+
+    

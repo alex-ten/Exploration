@@ -21,3 +21,12 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
 
     compress(ARGS.path)
+
+
+from datetime import date
+from argparse
+
+d0 = date(2018, 10, 1)
+d1 = date(2008, 9, 26)
+delta = d1 - d0
+print delta.days

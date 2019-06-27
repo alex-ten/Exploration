@@ -127,6 +127,10 @@ def softmax(x, stable=0):
     return np.exp(x) / np.sum(np.exp(x), axis=0)
 
 
+def addvargrp(name):
+    return '{}:1,{}:2,{}:3,{}:4'.format(name, name, name, name)
+
+
 def self_challenging_data(path, alpha=.01, null=.5, rpc_window=5, save_as=False):
     def p_val(n, k, p):
         return comb(n, k) * p ** k * (1 - p) ** (n - k)
@@ -138,7 +142,12 @@ def self_challenging_data(path, alpha=.01, null=.5, rpc_window=5, save_as=False)
     mdata = mdata[nontest, :]
 
     outdata = []
-    cols = 'sid,grp,cnd,stage,trial,blkt,current,nxt,sw,cor,pc:1,pc:2,pc:3,pc:4,pcr:1,pcr:2,pcr:3,pcr:4,pval:1,pval:2,pval:3,pval:4'.split(',')
+    cols = ('sid,grp,cnd,stage,trial,blkt,current,nxt,sw,cor,'
+            'pc:1,pc:2,pc:3,pc:4,'
+            'pcr:1,pcr:2,pcr:3,pcr:4,'
+            'pval05:1,pval05:2,pval05:3,pval05  :4')
+
+    cols = cols.split(',')
     ix = cols.index
 
     for grp in groups[:1]:

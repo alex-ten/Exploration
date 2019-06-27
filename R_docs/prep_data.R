@@ -11,7 +11,8 @@ library(devtools, quietly=TRUE)
 library(roxygen2)
 document(file.path(getwd(),'loc.R.utils'))
 
-main <- function() {
+main <- function(filter_switches=FALSE, 
+                 remove_NA=FALSE) {
   vargrp <- function(varname) {
     split2char(sprintf('%s:1,%s:2,%s:3,%s:4',varname,varname,varname,varname))
   }
@@ -43,12 +44,16 @@ main <- function() {
   xdata <- read.csv('cmnr_xdata.csv', check.names = FALSE)
   
   # Get switch trials (and remove pseudoswitch trials)
-  lmdata <- mdata[mdata$sw_act == 1, -1]
-  lmdata <- lmdata[!(lmdata$current == lmdata$nxt), ]
+  if (filter_switches) {
+    lmdata <- mdata[mdata$sw_act == 1, -1]
+    lmdata <- lmdata[!(lmdata$current == lmdata$nxt), ]
+  } else {
+    lmdata <- mdata[, -1]
+  }
   rm(mdata)
   
   # Discard incomplete cases
-  lmdata <- lmdata[complete.cases(lmdata), ]
+  if (remove_NA) {lmdata <- lmdata[complete.cases(lmdata), ]}
   
   # Convert categorical data to factors
   factor_col_names <- c('current', 'nxt')

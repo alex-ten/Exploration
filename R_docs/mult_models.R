@@ -27,11 +27,11 @@ for (varname in split2char('currentd,tord,pct,pcr,pc,pval,relt,sc,scsq,lrn,int,c
 # Convert to long format
 longd <- mlogit.data(d, shape="wide", varying=altspec, choice='nxt', sep=':')
 all_ivs <- split2char('currentd,tord,pct,pcr,pc,pval,relt,sc,scsq,lrn,int,comp,time,prog,rule,lrn2,grp,trial,blkt')
-ivs <- split2char('currentd,pval,relt,pc,int,time')
+ivs <- split2char('currentd,tord,pct,pcr,pc,pval,relt,scsq')
 BICN <- log(nrow(longd) / 4)
 # Start loop
 i <- 1
-nbp <- 6
+nbp <- length(ivs)
 z <- vector()
 for (j in 1:nbp) {
   combs <- combn(nbp, j)
@@ -97,3 +97,9 @@ for (j in 1:nbp) {
 }
 
 write.csv(x=out, file='smaller_ds.csv')
+
+best <- mlogit(nxt ~ currentd + pcr + pval + relt + scsq | 1, data = longd, maxit=1000, reflevel=pivot)
+
+y_hat <- factor(apply(best$probabilities, 1, which.max))
+
+cm <- confusionMatrix(data=y_hat, reference=factor(d$nxt))

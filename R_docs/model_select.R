@@ -28,9 +28,9 @@ ivs <- split2char('currentd,tord,pct,pcr,pc,pval,relt,sc,scsq,lrn,int,comp,time,
 df <- read.csv('complete-ds_09-11-2018.csv')
 df <- df[, 2:ncol(df)]
 
-# histogram(df$AIC, main='AIC', xlab='AIC', col='#008fd5', nint=30, lty="blank")
+# histogram(df$AIC, main='AIC', xlab='AIC', col='#008fd5', nint=63, lty="blank")
 # histogram(df$BIC, main='BIC', xlab='BIC', col='#008fd5', nint=30, lty="blank")
-# histogram(df$accuracy, main='Accuracy', xlab='Accuracy', col='#008fd5', xlim=c(.25, .5), ylim=c(0,1.1), nint=498, lty="blank")
+# histogram(df$accuracy, main='Accuracy', xlab='Accuracy', col='#008fd5', xlim=c(.25, .5), nint=30, lty="blank")
 # histogram(df$loglik, main='Log likelihood', xlab='log L', col='#008fd5', nint=300, lty="blank", ylim=c(0,2.9))
 
 # first_aic_crit <- 5000
@@ -44,7 +44,7 @@ df <- df[, 2:ncol(df)]
 
 # as.character(df[1, 'AIC'])
 # qplot(df$AIC, df$BIC)
-# 
+
 head(df[order(df$AIC), c('form', 'nvars', 'loglik', 'accuracy', 'AIC', 'BIC')], 10)
 head(df[order(df$BIC), c('form', 'nvars', 'loglik', 'accuracy', 'AIC', 'BIC')], 10)
 head(df[order(df$accuracy, decreasing=T), c('form', 'nvars', 'loglik', 'accuracy', 'AIC', 'BIC')], 10)
@@ -95,4 +95,14 @@ barplot(height = predw[order(predw, decreasing=T)], main='Parameter weights',
 
 
 weights <- predw[c(1,1,1,2:16,17,17,17,18,18,18,19,19,19)]
+
+Mmeans <- numeric(19)
+Mstds <- numeric(19)
+for (i in 1:19) {
+  Ms <- df$AIC[df$nvars == i]
+  meanM <- mean(Ms)
+  stdM <- sd(Ms)
+  Mmeans[i] <- meanM
+  Mstds[i] <- stdM
+}
 
